@@ -15,8 +15,8 @@ import org.json.simple.parser.ParseException;
 
 public class C_ReadSWAPI {
 
-    public static void main(String args[]) throws ParseException {
-        C_ReadSWAPI reader = new C_ReadSWAPI();
+    public static void main(String[] args) throws ParseException {
+        new C_ReadSWAPI();
     }
 
     public C_ReadSWAPI() throws ParseException {
@@ -24,11 +24,44 @@ public class C_ReadSWAPI {
     }
 
     public void pull() throws ParseException {
-        String output = "";
-        String jsonString="";
+
+
+        // turn your string into a JSON object using a parser
+
+        JSONObject json = importJSON("https://swapi.dev/api/people/4/");
+        // get a single value out of the json
+        String height = (String) json.get("height");
+        System.out.println("HEIGHT: " + height);
+
+        // get a json array out of the json
+        printArrayList(json,"films");
+
+        System.out.println("Name: "+json.get("name"));
+
+        JSONObject homeworld = importJSON((String)(json.get("homeworld")));
+        System.out.println("Homeworld: "+homeworld.get("name"));
+        System.out.println("Climate: "+homeworld.get("climate"));
+
+    }
+    void printArrayList(JSONObject jsonObject, String key){ //get and print an array from the JSON
+        if(jsonObject.containsKey(key)){
+            JSONArray jsonArray = (JSONArray) jsonObject.get(key);
+            if(!jsonArray.isEmpty()){
+                System.out.println(key.toUpperCase()+":");
+                for (Object o : jsonArray) {
+                    String object = (String) o;
+                    System.out.println(object);
+                }
+            }
+        }
+    }
+
+    JSONObject importJSON(String link){
+        String output;
+        StringBuilder jsonString= new StringBuilder();
         try {
 
-            URL url = new URL("https://swapi.dev/api/people/4/"); /** Your API's URL goes here */
+            URL url = new URL(link); // Your API's URL goes here
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Accept", "application/json");
@@ -43,39 +76,28 @@ public class C_ReadSWAPI {
                     (conn.getInputStream())));
 
 
-            System.out.print("OUTPUT from Server: ");
             while ((output = br.readLine()) != null) {
-                System.out.println(output);
-                jsonString += output;
+                jsonString.append(output);
             }
 
             conn.disconnect();
+            JSONParser parser = new JSONParser();
+            return (JSONObject) parser.parse(jsonString.toString());
 
         } catch (MalformedURLException e) {
             e.printStackTrace();
+            return null;
 
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
+
         }
+        catch (ParseException e){
+            e.printStackTrace();
+            return null;
 
-        // turn your string into a JSON object using a parser
-        JSONParser parser = new JSONParser();
-        JSONObject json = (JSONObject) parser.parse(jsonString);
-        System.out.println("JSON: " + json);
-
-        // get a single value out of the json
-        String height = (String) json.get("height");
-        System.out.println("HEIGHT: " + height);
-
-        // get a json array out of the json
-        JSONArray filmsArray = (JSONArray) json.get("films");
-        int n = filmsArray.size();
-        System.out.println("FILMS: ");
-        for (int i = 0; i < n; i++) {
-            String film = (String) filmsArray.get(i);
-            System.out.println(film);
         }
-
     }
 
 }

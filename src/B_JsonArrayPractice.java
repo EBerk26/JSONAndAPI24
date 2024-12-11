@@ -6,7 +6,7 @@ import org.json.simple.parser.ParseException;
 public class B_JsonArrayPractice {
 
     public static void main(String[] args) throws ParseException {
-        B_JsonArrayPractice practice = new B_JsonArrayPractice();
+        new B_JsonArrayPractice();
     }
 
     public B_JsonArrayPractice() throws ParseException {
@@ -22,13 +22,21 @@ public class B_JsonArrayPractice {
         System.out.println("HEIGHT: " + height);
 
         // get a json array out of the json
-        JSONArray filmsArray = (JSONArray) json.get("films");
-        int n = filmsArray.size();
-        System.out.println("FILMS: ");
-        for (int i = 0; i < n; i++) {
-            String film = (String) filmsArray.get(i);
-            System.out.println(film);
-        }
-
+        printArrayList(json,"films");
+        printArrayList(json,"starships");
     } // end of constructor
+
+
+    void printArrayList(JSONObject jsonObject, String key){ //get and print an array from the JSON
+        if(jsonObject.containsKey(key)){
+            JSONArray jsonArray = (JSONArray) jsonObject.get(key);
+            if(!jsonArray.isEmpty()){
+                System.out.println(key.toUpperCase()+":");
+                for (Object o : jsonArray) {
+                    String object = (String) o;
+                    System.out.println(object);
+                }
+            }
+        }
+    }
 }

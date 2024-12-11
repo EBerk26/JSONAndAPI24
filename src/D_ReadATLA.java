@@ -42,7 +42,6 @@ public class D_ReadATLA {
 
             System.out.println("Output from Server .... \n");
             while ((output = br.readLine()) != null) {
-                System.out.println(output);
                 jsonString += output;
             }
 
@@ -58,14 +57,21 @@ public class D_ReadATLA {
         // turn your string into a JSON object using a parser
         JSONParser parser = new JSONParser();
         JSONArray jsonArray = (JSONArray) parser.parse(jsonString);
-        System.out.println("JSON ARRAY: " + jsonArray);
 
         /* TODO : print the allies of the first character in the JSON */
-        // here is a line to get you started:
-        JSONObject character = (JSONObject) jsonArray.get(0); // 0 index is the first character
+        JSONObject firstCharacter = (JSONObject) jsonArray.get(0);
+        JSONArray firstCharacterAllies = (JSONArray) firstCharacter.get("allies");
+        for(int x =0;x<firstCharacterAllies.size();x++){
+            System.out.println(firstCharacterAllies.get(x));
+        }
+
+        System.out.println();
 
         /* TODO : print the "name" of every character in the jsonArray */
-
+        for(int x = 0;x<=19;x++) {
+            JSONObject character = (JSONObject) jsonArray.get(x); // 0 index is the first character
+            System.out.println(character.get("name"));
+        }
 
     }
 
