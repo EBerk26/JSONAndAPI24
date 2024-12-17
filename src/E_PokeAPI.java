@@ -1,14 +1,7 @@
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import org.json.simple.*;
+import org.json.simple.parser.*;
+import java.io.*;
+import java.net.*;
 
 public class E_PokeAPI {
 
@@ -16,29 +9,30 @@ public class E_PokeAPI {
         new E_PokeAPI();
     }
     public E_PokeAPI() {
+        System.out.println();
         JSONObject json = importJSON("https://pokeapi.co/api/v2/pokemon/charizard");
-        System.out.println(json.get("weight"));
-
+        System.out.println("Weight: "+json.get("weight"));
+        System.out.println();
         System.out.println("Abilities:");
         JSONArray abilitiesArray = (JSONArray) json.get("abilities");
-        for(int x =0;x<abilitiesArray.size();x++){
-            JSONObject abilityArrayItem = (JSONObject) abilitiesArray.get(x);
+        for (Object o : abilitiesArray) {
+            JSONObject abilityArrayItem = (JSONObject) o;
             JSONObject ability = (JSONObject) abilityArrayItem.get("ability");
             System.out.println(ability.get("name"));
         }
         System.out.println();
         System.out.println("Moves:");
         JSONArray movesArray = (JSONArray) json.get("moves");
-        for(int x =0;x<movesArray.size();x++){
-            JSONObject movesArrayItem = (JSONObject) movesArray.get(x);
+        for (Object o : movesArray) {
+            JSONObject movesArrayItem = (JSONObject) o;
             JSONObject move = ((JSONObject) movesArrayItem.get("move"));
-            System.out.println((String)move.get("name"));
+            System.out.println((String) move.get("name"));
         }
 
 
 
-
     }
+
 
     JSONObject importJSON(String link){
         String output;
@@ -68,19 +62,9 @@ public class E_PokeAPI {
             JSONParser parser = new JSONParser();
             return (JSONObject) parser.parse(jsonString.toString());
 
-        } catch (MalformedURLException e) {
+        } catch (ParseException | IOException e) {
             e.printStackTrace();
             return null;
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-
-        }
-        catch (ParseException e){
-            e.printStackTrace();
-            return null;
-
         }
     }
 }
