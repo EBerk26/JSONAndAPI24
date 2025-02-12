@@ -12,19 +12,24 @@ import java.util.ArrayList;
 
 public class WikipediaGameV2 {
     public WikipediaGameV2() {
-        String startPage = "Glen Powell";
-        String goalPage = "Kevin Bacon";
-        ArrayList<WikipediaPage> pages = new ArrayList<>();
-        WikipediaPage joe = new WikipediaPage(startPage,"");
-        joe.findChildren(goalPage);
-
-        //rudimentary pathfinding for stuff with a distance of 2
-        if(joe.childrenFound){
-            for(String s:joe.children){
-                pages.add (new WikipediaPage(s,joe.path));
-                pages.getLast().findChildren(goalPage);
-            }
+        String startTitle = "Glen Powell";
+        String goalTitle = "Kevin Bacon";
+        WikipediaPage currentPage;
+        ArrayList<Path> queue = new ArrayList<>();
+        WikipediaPage startPage = new WikipediaPage(startTitle,"");
+        startPage.findChildren(goalTitle);
+        for(Path p: startPage.children){
+            queue.addLast(p);
         }
+        while(!queue.isEmpty()){
+            currentPage = new WikipediaPage(queue.getFirst().title,queue.getFirst().path);
+            currentPage.findChildren(goalTitle);
+            for(Path p: currentPage.children){
+                queue.addLast(p);
+            }
+            queue.removeFirst();
+        }
+
     }
     public static void main(String[] args) {
         new WikipediaGameV2();
@@ -35,16 +40,16 @@ class WikipediaPage {
     String title;
     String titleUsingUnderscores;
     JSONObject json;
-    ArrayList<String> children = new ArrayList<>();
+    ArrayList<Path> children = new ArrayList<>();
     boolean childrenFound = false;
-    String path = "";
+    String pathString = "";
     public WikipediaPage(String title,String previousPath) {
         this.title = title;
         this.titleUsingUnderscores = underscorify(title);
-        if(path.equals("")){
-            path = title;
+        if(previousPath.equals("")){
+            pathString = title;
         } else {
-            path += (previousPath + " -> " + title);
+            pathString += (previousPath + " -> " + title);
         }
     }
     void findChildren(String goal){
@@ -58,14 +63,12 @@ class WikipediaPage {
         }
     }
     void getRestOfChildren(String plcontinue,String goal){
-        this.json = importJSON("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=links&titles="+titleUsingUnderscores+"&formatversion=2&pllimit=max&plcontinue="+urlVersionOfPLContinue(plcontinue));
+        this.json = importJSON(("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=links&titles="+titleUsingUnderscores+"&formatversion=2&pllimit=max&plcontinue="+urlVersionOfPLContinue(plcontinue)));
         getChildrenfromtheJSON(goal);
         if(json.containsKey("batchcomplete")){
             childrenFound = true;
         } else {
-            System.out.println();
             JSONObject overArchingContinueObject = (JSONObject)json.get("continue");
-            System.out.println();
             getRestOfChildren((String)(overArchingContinueObject.get("plcontinue")),goal);
         }
     }
@@ -75,14 +78,12 @@ class WikipediaPage {
         JSONArray pages = (JSONArray) query.get("pages");
         JSONObject content = (JSONObject) pages.getFirst();
         JSONArray links = (JSONArray) content.get("links");
-        System.out.println();
         for(int x =0;x<links.size();x++){
             JSONObject objectInArray = (JSONObject)links.get(x);
             String title = (String)objectInArray.get("title");
-            children.add(title);
-            System.out.println(title);
+            children.add(new Path(title,this.pathString));
             if(title.equals(goal)){
-                System.out.println("PATH FOUND: "+path+" -> "+title);
+                System.out.println("PATH FOUND: "+ pathString +" -> "+title);
                 System.exit(0);
             }
         }
@@ -129,5 +130,13 @@ class WikipediaPage {
             e.printStackTrace();
             return null;
         }
+    }
+}
+class Path{
+    String title;
+    String path; //this goes until the one right before the title.
+    public Path(String title, String path) {
+        this.title = title;
+        this.path = path;
     }
 }
