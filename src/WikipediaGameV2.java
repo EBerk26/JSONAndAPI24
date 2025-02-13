@@ -7,13 +7,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 
 public class WikipediaGameV2 {
     public WikipediaGameV2() {
-        String startTitle = "Glen Powell";
-        String goalTitle = "Kevin Bacon";
+        String startTitle = "Ed Sheeran";
+        String goalTitle = "Philosophy";
         WikipediaPage currentPage;
         ArrayList<Path> queue = new ArrayList<>();
         WikipediaPage startPage = new WikipediaPage(startTitle,"");
@@ -54,44 +55,57 @@ class WikipediaPage {
     }
     void findChildren(String goal){
         json=importJSON("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=links&titles="+titleUsingUnderscores+"&formatversion=2&pllimit=max");
-        getChildrenfromtheJSON(goal);
-        if(json.containsKey("batchcomplete")){
-            childrenFound = true;
+        if(json==null){
+            childrenFound=true;
         } else {
-            JSONObject overArchingContinueObject = (JSONObject)json.get("continue");
-            getRestOfChildren((String)overArchingContinueObject.get("plcontinue"),goal);
+            getChildrenfromtheJSON(goal);
+            if (json.containsKey("batchcomplete")) {
+                childrenFound = true;
+            } else {
+                JSONObject overArchingContinueObject = (JSONObject) json.get("continue");
+                getRestOfChildren((String) overArchingContinueObject.get("plcontinue"), goal);
+            }
         }
     }
     void getRestOfChildren(String plcontinue,String goal){
+
         this.json = importJSON(("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=links&titles="+titleUsingUnderscores+"&formatversion=2&pllimit=max&plcontinue="+urlVersionOfPLContinue(plcontinue)));
-        getChildrenfromtheJSON(goal);
-        if(json.containsKey("batchcomplete")){
-            childrenFound = true;
-        } else {
-            JSONObject overArchingContinueObject = (JSONObject)json.get("continue");
-            getRestOfChildren((String)(overArchingContinueObject.get("plcontinue")),goal);
+        if(json!=null) {
+            getChildrenfromtheJSON(goal);
+            if (json.containsKey("batchcomplete")) {
+                childrenFound = true;
+            } else {
+                JSONObject overArchingContinueObject = (JSONObject) json.get("continue");
+                getRestOfChildren(((String) (overArchingContinueObject.get("plcontinue"))), goal);
+            }
         }
     }
 
     void getChildrenfromtheJSON(String goal){
-        JSONObject query = (JSONObject) json.get("query");
-        JSONArray pages = (JSONArray) query.get("pages");
-        JSONObject content = (JSONObject) pages.getFirst();
-        JSONArray links = (JSONArray) content.get("links");
-        for(int x =0;x<links.size();x++){
-            JSONObject objectInArray = (JSONObject)links.get(x);
-            String title = (String)objectInArray.get("title");
-            children.add(new Path(title,this.pathString));
-            if(title.equals(goal)){
-                System.out.println("PATH FOUND: "+ pathString +" -> "+title);
-                System.exit(0);
+        if(!(json==null)) {
+            JSONObject query = (JSONObject) json.get("query");
+            JSONArray pages = (JSONArray) query.get("pages");
+            JSONObject content = (JSONObject) pages.getFirst();
+            JSONArray links = (JSONArray) content.get("links");
+            if(links!=null) {
+                for (int x = 0; x < links.size(); x++) {
+                    JSONObject objectInArray = (JSONObject) links.get(x);
+                    String title = (String) objectInArray.get("title");
+                    children.add(new Path(title, this.pathString));
+                    System.out.println(title);
+                    if (title.equals(goal)) {
+                        System.out.println("PATH FOUND: " + pathString + " -> " + title);
+                        System.exit(0);
+                    }
+                }
             }
         }
     }
 
     String urlVersionOfPLContinue(String plcontinue){
         int indexOfFirstPipe = plcontinue.indexOf('|');
-        return plcontinue.substring(0,indexOfFirstPipe)+"%7C0%7C"+plcontinue.substring(indexOfFirstPipe+3);
+        int indexOfSecondPipe = plcontinue.indexOf('|',indexOfFirstPipe+1);
+        return plcontinue.substring(0,indexOfFirstPipe)+"%7C"+plcontinue.substring(indexOfFirstPipe+1,indexOfSecondPipe)+"%7C"+plcontinue.substring(indexOfSecondPipe+1);
     }
 
     String underscorify(String noUnderscores){
@@ -107,15 +121,13 @@ class WikipediaPage {
         String output;
         StringBuilder jsonString= new StringBuilder();
         try {
-
             URL url = new URL(link); // Your API's URL goes here
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Accept", "application/json");
 
 
-            BufferedReader br = new BufferedReader(new InputStreamReader(
-                    (conn.getInputStream())));
+            BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
 
 
             while ((output = br.readLine()) != null) {
