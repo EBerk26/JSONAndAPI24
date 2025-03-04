@@ -48,21 +48,30 @@ public class WikipediaGameUI implements ActionListener {
     public String findPath(String startTitle, String goalTitle) {
         WikipediaPage currentPage;
         ArrayList<Path> queue = new ArrayList<>();
-        WikipediaPage startPage = new WikipediaPage(startTitle,"",false);
-        String children = startPage.findChildren(goalTitle);
-        if(children!= null){
-            return children;
+        ArrayList<Path> goalPages = new ArrayList<>();
+        ArrayList<String> pagesWithFoundChildren = new ArrayList<>();
+        WikipediaPage endPage = new WikipediaPage(goalTitle,"",true,null);
+        endPage.findParents();
+        for(Path p: endPage.parents){
+            goalPages.addLast(p);
         }
+        goalPages.addFirst(new Path(goalTitle,""));
+        WikipediaPage startPage = new WikipediaPage(startTitle,"",false,goalPages);
+        if(startPage.findChildren()!=null){
+            return startPage.findChildren();
+        }
+        pagesWithFoundChildren.add(startPage.title);
 
         for(Path p: startPage.children){
             queue.addLast(p);
         }
         while(!queue.isEmpty()) {
-            currentPage = new WikipediaPage(queue.getFirst().title, queue.getFirst().path, false);
-            String search = currentPage.findChildren(goalTitle);
-            if (search != null) {
-                return search;
-            } else {
+            if(!pagesWithFoundChildren.contains(queue.getFirst().title)) {
+                currentPage = new WikipediaPage(queue.getFirst().title, queue.getFirst().path, false,goalPages);
+                if(currentPage.findChildren()!=null){
+                    return currentPage.findChildren();
+                }
+                pagesWithFoundChildren.add(currentPage.title);
                 for (Path p : currentPage.children) {
                     if (p.title.contains(goalTitle) || p.title.contains(goalTitle.toLowerCase())) { //if the previous title is contained somewhere it is prioritized.
                         queue.addFirst(p);
@@ -75,4 +84,5 @@ public class WikipediaGameUI implements ActionListener {
         }
         return "failure";
     }
+
 }

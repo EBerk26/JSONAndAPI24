@@ -8,32 +8,37 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class WikipediaGameV2 {
+    //TO DO: Make it so that we don't find the children from the same page multiple times, do some back tracking from the end, heuristic function
     public String findPath(String startTitle, String goalTitle) {
         WikipediaPage currentPage;
         ArrayList<Path> queue = new ArrayList<>();
         ArrayList<Path> goalPages = new ArrayList<>();
-        WikipediaPage startPage = new WikipediaPage(startTitle,"",false);
-        WikipediaPage endPage = new WikipediaPage(goalTitle,"",true);
-        /*endPage.findParents();
-        for(Path p: endPage.children){
+        ArrayList<String> pagesWithFoundChildren = new ArrayList<>();
+        WikipediaPage endPage = new WikipediaPage(goalTitle,"",true,null);
+        endPage.findParents();
+        for(Path p: endPage.parents){
             goalPages.addLast(p);
         }
-        while(goalPages.size()<=2000){
-            //find goal pages until you have 2k of them or however many
-        }*/
-        startPage.findChildren(goalTitle);
+        goalPages.addFirst(new Path(goalTitle,""));
+        WikipediaPage startPage = new WikipediaPage(startTitle,"",false,goalPages);
+        if(startPage.findChildren()!=null){
+            return startPage.findChildren();
+        }
+        pagesWithFoundChildren.add(startPage.title);
 
         for(Path p: startPage.children){
           queue.addLast(p);
         }
         while(!queue.isEmpty()) {
-            currentPage = new WikipediaPage(queue.getFirst().title, queue.getFirst().path, false);
-            String search = currentPage.findChildren(goalTitle);
-            if (search != null) {
-                return search;
-            } else {
+            if(!pagesWithFoundChildren.contains(queue.getFirst().title)) {
+                currentPage = new WikipediaPage(queue.getFirst().title, queue.getFirst().path, false,goalPages);
+                if(currentPage.findChildren()!=null){
+                    return currentPage.findChildren();
+                }
+                pagesWithFoundChildren.add(currentPage.title);
                 for (Path p : currentPage.children) {
                     if (p.title.contains(goalTitle) || p.title.contains(goalTitle.toLowerCase())) { //if the previous title is contained somewhere it is prioritized.
                         queue.addFirst(p);
@@ -46,12 +51,20 @@ public class WikipediaGameV2 {
         }
         return "failure";
     }
-    public WikipediaGameV2(boolean test){
-        WikipediaPage endPage = new WikipediaPage("Taylor Swift","",true);
-        endPage.findParents();
+    int bluh (ArrayList<Path> queue){
+        for(int x=0;x<queue.size();x++){
+            if(queue.get(x).title.equals("Tyre, Lebanon")){
+                return x;
+            }
+        }
+        return -1;
+    }
+    public WikipediaGameV2(int test){
+        WikipediaPage pluh = new WikipediaPage("Alexander the Great","",false,null);
+        pluh.findChildren();
     }
     public WikipediaGameV2(){
-        System.out.println(findPath("Taylor Swift","Noah Kahan"));
+        System.out.println(findPath("Paramjeet Singh Kattu","Stadion u Parku"));
     }
     public static void main(String[] args) {
         new WikipediaGameV2();
@@ -60,6 +73,7 @@ public class WikipediaGameV2 {
 
 class WikipediaPage {
     String title;
+    char[] accents;
     String titleUsingUnderscores;
     JSONObject json;
     ArrayList<Path> children = new ArrayList<>();
@@ -67,30 +81,40 @@ class WikipediaPage {
     boolean parentsFound = true;
     ArrayList<Path> parents = new ArrayList<>();
     String pathString = "";
-    public WikipediaPage(String title,String previousPath,boolean backTracking) {
+    ArrayList<Path> goalPages;
+    public WikipediaPage(String title,String previousPath,boolean backTracking,ArrayList<Path> goalPages) {
+        ArrayList<Character> ArrayListaccents = new ArrayList<>(Arrays.asList('à','À','á','Á','â','Â','ã','Ã','ä','Ä','å','Å','æ','Æ','œ','Œ','ç','Ç','ð','Ð','ø','Ø','ß','è','È','é','É','ê','Ê','ñ','Ñ','ë','Ë','ì','Ì','í','Í','î','Î','õ','Õ','ï','Ï','ò','Ò','ó','Ó','ô','Ô','ö','Ö','ù','Ù','ú','Ú','û','Û','ü','Ü','ý','Ý','ÿ','Ÿ'));
+        Object[] objectAccents = ArrayListaccents.toArray();
+        accents = new char[objectAccents.length];
+        for(int x =0;x<objectAccents.length;x++){
+            accents[x] = (Character)(objectAccents[x]);
+        }
         this.title = title;
         this.titleUsingUnderscores = underscorify(title);
+        if(goalPages!=null) {
+            this.goalPages = new ArrayList<>(goalPages);
+        }
         if(backTracking){
             if(previousPath.equals("")){
                 pathString = this.title;
             } else {
-                pathString = this.title + " -> " + pathString;
+                pathString = this.title + " → " + pathString;
             }
         } else if(previousPath.equals("")){
             pathString = title;
         } else {
-            pathString += (previousPath + " -> " + title);
+            pathString += (previousPath + " → " + title);
         }
 
 
     }
-    String findChildren(String goal){
-        json=importJSON("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=links&titles="+titleUsingUnderscores+"&formatversion=2&pllimit=max");
+    String findChildren(){
+        json=importJSON(chopOffAccents("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=links&titles="+titleUsingUnderscores+"&formatversion=2&plnamespace=0&pllimit=max"));
         if(json==null){
             childrenFound=true;
             return null;
         } else {
-            String answerIsHere = getChildrenfromtheJSON(goal);
+            String answerIsHere = getChildrenfromtheJSON();
             if(answerIsHere!=null){
                 return answerIsHere;
             }
@@ -98,21 +122,21 @@ class WikipediaPage {
                 childrenFound = true;
             } else {
                 JSONObject overArchingContinueObject = (JSONObject) json.get("continue");
-                String restOfChildren = getRestOfChildren((String) overArchingContinueObject.get("plcontinue"), goal);
+                String restOfChildren = getRestOfChildren((String) overArchingContinueObject.get("plcontinue"));
                 if(restOfChildren!=null){
                     return restOfChildren;
                 } else{
+
                     return null;
                 }
             }
             return null;
         }
     }
-    String getRestOfChildren(String plcontinue,String goal){
-
-        this.json = importJSON(("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=links&titles="+titleUsingUnderscores+"&formatversion=2&pllimit=max&plcontinue="+urlVersionOfPLContinue(plcontinue)));
+    String getRestOfChildren(String plcontinue){
+        this.json = importJSON(chopOffAccents(("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=links&titles="+titleUsingUnderscores+"&formatversion=2&plnamespace=0&pllimit=max&plcontinue="+urlVersionOfPLContinue(plcontinue))));
         if(json!=null) {
-            String answerIsHere = getChildrenfromtheJSON(goal);
+            String answerIsHere = getChildrenfromtheJSON();
             if(answerIsHere!=null){
                 return answerIsHere;
             }
@@ -120,7 +144,7 @@ class WikipediaPage {
                 childrenFound = true;
             } else {
                 JSONObject overArchingContinueObject = (JSONObject) json.get("continue");
-                String restOfChildren = getRestOfChildren((String) overArchingContinueObject.get("plcontinue"), goal);
+                String restOfChildren = getRestOfChildren((String) overArchingContinueObject.get("plcontinue"));
                 if(restOfChildren!=null){
                     return restOfChildren;
                 } else{
@@ -131,7 +155,7 @@ class WikipediaPage {
         return null;
     }
 
-    String getChildrenfromtheJSON(String goal){
+    String getChildrenfromtheJSON(){
         if(!(json==null)) {
             JSONObject query = (JSONObject) json.get("query");
             JSONArray pages = (JSONArray) query.get("pages");
@@ -143,16 +167,36 @@ class WikipediaPage {
                     String title = (String) objectInArray.get("title");
                     children.add(new Path(title, this.pathString));
                     System.out.println(title);
-                    if (title.equals(goal)) {
-                        return("PATH FOUND: " + pathString + " -> " + title);
+                    if (titleIsAGoalPage(title,goalPages)) {
+                        int indexOfFoundPath = indexOfTitleInGoalPages(title);
+                        return ("PATH FOUND: " + pathString + " → " +goalPages.get(indexOfFoundPath).path);
                     }
                 }
             }
         }
         return null;
     }
+    int indexOfTitleInGoalPages(String title){
+        for(int x=0;x<goalPages.size();x++){
+            if(title.equals(goalPages.get(x).firstTitle)){
+                return x;
+            }
+        }
+        return -1;
+    }
+
+    boolean titleIsAGoalPage(String title,ArrayList<Path> goalPages){
+        if(goalPages!=null) {
+            for (Path p : goalPages) {
+                if (title.equals(p.firstTitle)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     void findParents(){
-        json = importJSON("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=linkshere&titles="+titleUsingUnderscores+"&formatversion=2&lhprop=title&lhlimit=max");
+        json = importJSON(chopOffAccents("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=linkshere&titles="+titleUsingUnderscores+"&formatversion=2&lhnamespace=0&lhprop=title&lhlimit=max"));
         if(json==null){
             parentsFound = true;
         } else {
@@ -176,15 +220,15 @@ class WikipediaPage {
                 for (int x = 0; x < linkshere.size(); x++) {
                     JSONObject objectInArray = (JSONObject) linkshere.get(x);
                     String title = (String) objectInArray.get("title");
-                    pathString = title + " -> "+this.pathString;
-                    parents.add(new Path(title, this.pathString));
+                    String pathString = title + " → "+this.pathString;
+                    parents.add(new Path(this.title, pathString,title));
                     System.out.println(title);
                 }
             }
         }
     }
     void getRestOfParents(String lhcontinue){
-        this.json = importJSON("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=linkshere&titles="+titleUsingUnderscores+"&formatversion=2&lhprop=title&lhlimit=max&lhcontinue="+lhcontinue);
+        this.json = importJSON(chopOffAccents("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=linkshere&titles="+titleUsingUnderscores+"&formatversion=2&lhnamespace=0&lhprop=title&lhlimit=max&lhcontinue="+lhcontinue));
         if(json!=null){
             getParentsfromtheJSON();
             if(json.containsKey("batchcomplete")){
@@ -232,18 +276,43 @@ class WikipediaPage {
             conn.disconnect();
             JSONParser parser = new JSONParser();
             return (JSONObject) parser.parse(jsonString.toString());
-
         } catch (ParseException | IOException e) {
             e.printStackTrace();
             return null;
         }
     }
+    String chopOffAccents(String link){
+        char chartAtX;
+        if(link.contains("continue=")) {
+            for (int x = link.indexOf("continue="); x < link.length(); x++) {
+                chartAtX = link.charAt(x);
+                if (isAccented(chartAtX)) {
+                    return link.substring(0, x);
+                }
+            }
+        }
+        return link;
+    }
+    boolean isAccented(Character input){
+        for(int x =0;x<accents.length;x++){
+            if (accents[x]==input){
+                return true;
+            }
+        }
+        return false;
+    }
 }
 class Path{
     String title;
     String path; //this goes until the one right before the title.
+    String firstTitle;
     public Path(String title, String path) {
         this.title = title;
         this.path = path;
+    }
+    public Path(String title, String path,String firstTitle) {
+        this.title = title;
+        this.path = path;
+        this.firstTitle = firstTitle;
     }
 }
