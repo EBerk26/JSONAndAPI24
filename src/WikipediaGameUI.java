@@ -13,23 +13,21 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import static java.awt.Color.*;
 
 public class WikipediaGameUI implements ActionListener {
-    //the way I previously wrote the code doesn't lend itself so easily to a UI, so I'm making the UI over here and then I can figure out how to add the pathfinding
+    //the way I previously wrote the code doesn't lend itself so easily to a UI, so I'm making the UI over here, and then I can figure out how to add the pathfinding
     JFrame frame;
     JPanel backPanel;
     JPanel bottomPanel;
     JPanel upperBottomPanel;
-    TextArea output;
-    TextArea startArticleTextArea;
-    TextArea endArticleTextArea;
+    JTextArea output;
+    JTextArea startArticleTextArea;
+    JTextArea endArticleTextArea;
     JButton go;
 
     public static void main(String[] args) {
         new WikipediaGameUI();
-    }
-    public WikipediaGameUI(int test){
-        System.out.println(description("Nökör"));
     }
     public WikipediaGameUI(){
         frame = new JFrame("Wikipedia Pathfinder");
@@ -39,10 +37,10 @@ public class WikipediaGameUI implements ActionListener {
         upperBottomPanel = new JPanel(new GridLayout(1,2));
         go = new JButton("GO");
         go.addActionListener(this);
-        output = new TextArea();
+        output = new JTextArea();
         output.setEditable(false);
-        startArticleTextArea = new TextArea("Start Article");
-        endArticleTextArea = new TextArea("Goal Article");
+        startArticleTextArea = new JTextArea("Start Article");
+        endArticleTextArea = new JTextArea("Goal Article");
         frame.add(backPanel);
         backPanel.add(output);
         backPanel.add(bottomPanel);
@@ -50,16 +48,25 @@ public class WikipediaGameUI implements ActionListener {
         bottomPanel.add(go);
         upperBottomPanel.add(startArticleTextArea);
         upperBottomPanel.add(endArticleTextArea);
+        go.setForeground(GREEN);
+        go.setFont(new Font(null,Font.PLAIN,50));
+        startArticleTextArea.setBackground(ORANGE);
+        endArticleTextArea.setBackground(ORANGE);
+        startArticleTextArea.setFont(new Font(null,Font.PLAIN,18));
+        endArticleTextArea.setFont(new Font(null,Font.PLAIN,18));
+        output.setFont(new Font(null,Font.PLAIN,25));
+        output.setBackground(BLUE);
+        output.setForeground(WHITE);
         frame.setVisible(true);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
-    public void actionPerformed(ActionEvent e) {
+    public void actionPerformed(ActionEvent e) { //this method came from ChatGPT as I could not figure out how to make the text appear before the pathfinding was finished -> changes to the UI inside the actionPerformed method happen all at once normally
         String startTitle = startArticleTextArea.getText();
         String endTitle = endArticleTextArea.getText();
 
         // Update UI immediately before starting pathfinding
-        startArticleTextArea.setText(startTitle + " (" + description(startTitle) + ")");
-        endArticleTextArea.setText(endTitle + " (" + description(endTitle) + ")");
+        startArticleTextArea.setText(startTitle + "\n" + description(startTitle));
+        endArticleTextArea.setText(endTitle + "\n" + description(endTitle));
         output.setText("Finding path...");
 
         // Run pathfinding in the background
@@ -75,6 +82,7 @@ public class WikipediaGameUI implements ActionListener {
                     output.setText(get()); // Update the UI with the found path
                 } catch (Exception ex) {
                     output.setText("An error occurred.");
+                    //noinspection CallToPrintStackTrace
                     ex.printStackTrace();
                 }
             }
@@ -149,7 +157,7 @@ public class WikipediaGameUI implements ActionListener {
         String output;
         StringBuilder jsonString= new StringBuilder();
         try {
-            URL url = new URL(link); // Your API's URL goes here
+            @SuppressWarnings("deprecation") URL url = new URL(link);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Accept", "application/json");
@@ -166,6 +174,7 @@ public class WikipediaGameUI implements ActionListener {
             JSONParser parser = new JSONParser();
             return (JSONObject) parser.parse(jsonString.toString());
         } catch (ParseException | IOException e) {
+            //noinspection CallToPrintStackTrace
             e.printStackTrace();
             return null;
         }
