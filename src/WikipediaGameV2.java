@@ -22,7 +22,7 @@ public class WikipediaGameV2 {
         for(Path p: endPage.parents){
             goalPages.addLast(p);
         }
-        goalPages.addFirst(new Path(goalTitle,""));
+        goalPages.addFirst(new Path(goalTitle,goalTitle));
         WikipediaPage startPage = new WikipediaPage(startTitle,"",false,goalPages);
         if(startPage.findChildren()!=null){
             return startPage.findChildren();
@@ -47,6 +47,8 @@ public class WikipediaGameV2 {
                     }
                 }
                 queue.removeFirst();
+            } else{
+                queue.removeFirst();
             }
         }
         return "failure";
@@ -64,7 +66,7 @@ public class WikipediaGameV2 {
         pluh.findChildren();
     }
     public WikipediaGameV2(){
-        System.out.println(findPath("Paramjeet Singh Kattu","Stadion u Parku"));
+        System.out.println(findPath("Luzon water redstart","Dwayne Johnson"));
     }
     public static void main(String[] args) {
         new WikipediaGameV2();
@@ -165,6 +167,9 @@ class WikipediaPage {
                 for (int x = 0; x < links.size(); x++) {
                     JSONObject objectInArray = (JSONObject) links.get(x);
                     String title = (String) objectInArray.get("title");
+                    if(title.equals("Nökör")){
+                        System.out.println();
+                    }
                     children.add(new Path(title, this.pathString));
                     System.out.println(title);
                     if (titleIsAGoalPage(title,goalPages)) {
@@ -178,7 +183,7 @@ class WikipediaPage {
     }
     int indexOfTitleInGoalPages(String title){
         for(int x=0;x<goalPages.size();x++){
-            if(title.equals(goalPages.get(x).firstTitle)){
+            if(title.equals(goalPages.get(x).firstTitle)||title.equals(goalPages.get(x).title)){
                 return x;
             }
         }
@@ -188,7 +193,7 @@ class WikipediaPage {
     boolean titleIsAGoalPage(String title,ArrayList<Path> goalPages){
         if(goalPages!=null) {
             for (Path p : goalPages) {
-                if (title.equals(p.firstTitle)) {
+                if (title.equals(p.firstTitle)||title.equals(p.title)) {
                     return true;
                 }
             }

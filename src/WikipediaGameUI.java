@@ -1,7 +1,17 @@
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 
 public class WikipediaGameUI implements ActionListener {
@@ -17,6 +27,9 @@ public class WikipediaGameUI implements ActionListener {
 
     public static void main(String[] args) {
         new WikipediaGameUI();
+    }
+    public WikipediaGameUI(int test){
+        System.out.println(description("Nökör"));
     }
     public WikipediaGameUI(){
         frame = new JFrame("Wikipedia Pathfinder");
@@ -41,10 +54,34 @@ public class WikipediaGameUI implements ActionListener {
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
     public void actionPerformed(ActionEvent e) {
+        String startTitle = startArticleTextArea.getText();
+        String endTitle = endArticleTextArea.getText();
+
+        // Update UI immediately before starting pathfinding
+        startArticleTextArea.setText(startTitle + " (" + description(startTitle) + ")");
+        endArticleTextArea.setText(endTitle + " (" + description(endTitle) + ")");
         output.setText("Finding path...");
-        String path = findPath(startArticleTextArea.getText(),endArticleTextArea.getText());
-        output.setText(path);
+
+        // Run pathfinding in the background
+        SwingWorker<String, Void> worker = new SwingWorker<>() {
+            @Override
+            protected String doInBackground() {
+                return findPath(startTitle, endTitle);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    output.setText(get()); // Update the UI with the found path
+                } catch (Exception ex) {
+                    output.setText("An error occurred.");
+                    ex.printStackTrace();
+                }
+            }
+        };
+        worker.execute(); // Start the background task
     }
+
     public String findPath(String startTitle, String goalTitle) {
         WikipediaPage currentPage;
         ArrayList<Path> queue = new ArrayList<>();
@@ -55,7 +92,7 @@ public class WikipediaGameUI implements ActionListener {
         for(Path p: endPage.parents){
             goalPages.addLast(p);
         }
-        goalPages.addFirst(new Path(goalTitle,""));
+        goalPages.addFirst(new Path(goalTitle,goalTitle));
         WikipediaPage startPage = new WikipediaPage(startTitle,"",false,goalPages);
         if(startPage.findChildren()!=null){
             return startPage.findChildren();
@@ -80,9 +117,57 @@ public class WikipediaGameUI implements ActionListener {
                     }
                 }
                 queue.removeFirst();
+            } else{
+                queue.removeFirst();
             }
         }
         return "failure";
     }
+    String description(String title){
+        JSONObject json = importJSON("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=description&titles="+underscorify(title)+"&formatversion=2");
+        if(json==null){
+            return "Description Was Not Found";
+        }
+        JSONObject a = (JSONObject) json.get("query");
+        JSONArray b = (JSONArray) a.get("pages");
+        JSONObject c = (JSONObject) b.getFirst();
+        if(c.containsKey("description")){
+            return((String)c.get("description"));
+        }
+        return "Description Was Not Found";
+    }
+    String underscorify(String noUnderscores){
+        String noUnderscoresEditable = noUnderscores;
+        while(noUnderscoresEditable.contains(" ")){
+            int indexOfSpace = noUnderscoresEditable.indexOf(" ");
+            noUnderscoresEditable=noUnderscoresEditable.substring(0,indexOfSpace)+"_"+noUnderscoresEditable.substring(indexOfSpace+1);
+        }
 
+        return noUnderscoresEditable;
+    }
+    JSONObject importJSON(String link){
+        String output;
+        StringBuilder jsonString= new StringBuilder();
+        try {
+            URL url = new URL(link); // Your API's URL goes here
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "application/json");
+
+
+            BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
+
+
+            while ((output = br.readLine()) != null) {
+                jsonString.append(output);
+            }
+
+            conn.disconnect();
+            JSONParser parser = new JSONParser();
+            return (JSONObject) parser.parse(jsonString.toString());
+        } catch (ParseException | IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }
