@@ -97,6 +97,10 @@ public class WikipediaGameUI implements ActionListener {
         ArrayList<String> pagesWithFoundChildren = new ArrayList<>();
         WikipediaPage endPage = new WikipediaPage(goalTitle,"",true,null);
         endPage.findParents();
+        for(int x =1;x<=170;x++){
+            System.out.print("*");
+        }
+        System.out.println();
         for(Path p: endPage.parents){
             goalPages.addLast(p);
         }
@@ -150,9 +154,14 @@ public class WikipediaGameUI implements ActionListener {
             int indexOfSpace = noUnderscoresEditable.indexOf(" ");
             noUnderscoresEditable=noUnderscoresEditable.substring(0,indexOfSpace)+"_"+noUnderscoresEditable.substring(indexOfSpace+1);
         }
-
+        while(noUnderscoresEditable.contains("&")){
+            int indexOfAnd = noUnderscoresEditable.indexOf("&");
+            noUnderscoresEditable=noUnderscoresEditable.substring(0,indexOfAnd)+"_"+noUnderscoresEditable.substring(indexOfAnd+1);
+        }
         return noUnderscoresEditable;
     }
+
+
     JSONObject importJSON(String link){
         String output;
         StringBuilder jsonString= new StringBuilder();

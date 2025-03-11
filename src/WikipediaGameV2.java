@@ -54,7 +54,7 @@ public class WikipediaGameV2 {
         return "failure";
     }
     public WikipediaGameV2(){
-        System.out.println(findPath("Luzon water redstart","Dwayne Johnson"));
+        System.out.println(findPath("Milton Academy","Quokka"));
     }
     public static void main(String[] args) {
         new WikipediaGameV2();
@@ -143,6 +143,9 @@ class WikipediaPage {
                 for (Object link : links) {
                     JSONObject objectInArray = (JSONObject) link;
                     String title = (String) objectInArray.get("title");
+                    if(title.equals("Ashmore and Cartier Islands")){
+                        System.out.println();
+                    }
                     children.add(new Path(title, this.pathString));
                     System.out.println(title);
                     if (titleIsAGoalPage(title, goalPages)) {
@@ -231,7 +234,10 @@ class WikipediaPage {
             int indexOfSpace = noUnderscoresEditable.indexOf(" ");
             noUnderscoresEditable=noUnderscoresEditable.substring(0,indexOfSpace)+"_"+noUnderscoresEditable.substring(indexOfSpace+1);
         }
-
+        while(noUnderscoresEditable.contains("&")){
+            int indexOfAnd = noUnderscoresEditable.indexOf("&");
+            noUnderscoresEditable=noUnderscoresEditable.substring(0,indexOfAnd)+"_"+noUnderscoresEditable.substring(indexOfAnd+1);
+        }
         return noUnderscoresEditable;
     }
     JSONObject importJSON(String link){
